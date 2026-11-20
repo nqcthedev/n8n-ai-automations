@@ -373,4 +373,4 @@ The workflow JSON is **generated from code** so that the Code-node logic lives i
 
 ---
 
-Built by Cuong Nguyen, AI automation developer. Available for hire on Fiverr: https://www.fiverr.com/cuongnqxx
+Built by NQC The Dev, AI automation developer. Available for hire on Fiverr: https://www.fiverr.com/cuongnqxx
