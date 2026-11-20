@@ -92,7 +92,7 @@ export function buildLeadQualifier() {
 
   addCode(wf, 'Dedupe (72h window)', [4, 0], code('lead/dedupe.js'));
   addIf(wf, 'New lead?', [5, 0], [cond('={{ $json.duplicate }}', 'boolean', 'false')]);
-  addRespond(wf, 'Respond: duplicate', [6, 1.1],
+  addRespond(wf, 'Respond: duplicate', [5, 1.1],
     "={{ { status: 'duplicate', message: 'Thanks! We already received your request and will be in touch shortly.' } }}",
     '={{ 200 }}');
 

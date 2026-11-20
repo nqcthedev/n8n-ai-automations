@@ -15,7 +15,7 @@
       "parameters": {
         "content": "## 1. Intake\nTwo entry points: **upload webhook** (multipart, field `file`) and **Gmail** (PDF attachments).\nExact duplicate files are caught by SHA-256 *before* any AI call.",
         "width": 1630,
-        "height": 1080,
+        "height": 780,
         "color": 7
       }
     },
@@ -31,7 +31,7 @@
       "parameters": {
         "content": "## 2. Extract\nPDF text -> LLM returns strict JSON (vendor, number, dates, line items, totals, currency).\nThe model is told to copy numbers exactly and never fix them.",
         "width": 1180,
-        "height": 1080,
+        "height": 780,
         "color": 5
       }
     },
@@ -47,7 +47,7 @@
       "parameters": {
         "content": "## 3. Validate in code (not by the AI)\nline items = subtotal, subtotal + tax = total, tax rate, qty x unit price, date sanity, ISO currency, duplicate invoice number per vendor.\nValid -> **Invoices** sheet. Anything else -> **Review queue** sheet + Slack.",
         "width": 2350,
-        "height": 1080,
+        "height": 780,
         "color": 4
       }
     },
@@ -288,8 +288,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2064,
-        250
+        2016,
+        280
       ],
       "parameters": {
         "mode": "runOnceForEachItem",
@@ -355,8 +355,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2328,
-        150
+        2376,
+        280
       ],
       "parameters": {
         "mode": "runOnceForEachItem",

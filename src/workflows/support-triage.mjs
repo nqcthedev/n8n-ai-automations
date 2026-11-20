@@ -69,7 +69,7 @@ export function buildSupportInbox() {
     description: 'Gmail inbox -> one execution per email of "AI Support Inbox Triage - process one email" (classification, grounded draft, Slack approval, send, log).',
   });
 
-  wf.sticky('Note: inbox', '## AI Support Inbox Triage (entry)\nPolls Gmail every minute for new unread email.\nEach email is handed to its **own** sub-workflow execution, so one slow approval in Slack never blocks the next email.\n\n**Test with sample emails** runs 3 sample emails (billing / bug / spam) through the real AI steps in dry-run mode.', [-0.3, -1.65], { width: 1180, height: 330, color: 7 });
+  wf.sticky('Note: inbox', '## AI Support Inbox Triage (entry)\nPolls Gmail every minute for new unread email.\nEach email is handed to its **own** sub-workflow execution, so one slow approval in Slack never blocks the next email.\n\n**Test with sample emails** runs 3 sample emails (billing / bug / spam) through the real AI steps in dry-run mode.', [-0.3, -1.3], { width: 1180, height: 210, color: 7 });
 
   wf.node({
     name: 'Gmail: new support email',
@@ -123,7 +123,7 @@ export function buildSupportWorker() {
 
   wf.sticky('Note: classify', '## 1. Filter + classify\nAuto-replies, bounces, newsletters and no-reply senders are skipped before any AI call.\nLLM classifies category (billing / bug / sales / other / spam), sentiment and urgency. Invalid output -> "other" + human attention.', [-0.3, -1.5], { width: 2110, height: 900, color: 7 });
   wf.sticky('Note: draft', '## 2. Grounded draft\nRelevant FAQ entries are retrieved (edit them in **Retrieve FAQ snippets**). The LLM may only use those facts.\nThe validator rejects drafts citing unknown FAQ ids and flags money amounts that are not in the FAQ.', [8.7, -1.5], { width: 1650, height: 900, color: 5 });
-  wf.sticky('Note: approve', '## 3. Human approval\nNothing is sent without a human: Slack message with **Approve & send / Reject** buttons (waits up to 24h).\nApproved -> Gmail reply in the same thread. Rejected / timed out -> email stays unread for manual handling.\nEvery email is logged to Google Sheets.', [15.7, -1.5], { width: 2350, height: 1300, color: 4 });
+  wf.sticky('Note: approve', '## 3. Human approval\nNothing is sent without a human: Slack message with **Approve & send / Reject** buttons (waits up to 24h).\nApproved -> Gmail reply in the same thread. Rejected / timed out -> email stays unread for manual handling.\nEvery email is logged to Google Sheets.', [15.7, -1.5], { width: 2350, height: 900, color: 4 });
 
   wf.node({
     name: 'When called for one email',
@@ -142,7 +142,7 @@ export function buildSupportWorker() {
   ], { includeOtherFields: true });
   addCode(wf, 'Normalize email', [2, 0], code('support/normalize-email.js'), { mode: 'runOnceForEachItem' });
   addIf(wf, 'Needs a reply?', [3, 0], [cond('={{ $json.skip }}', 'boolean', 'false')]);
-  addSet(wf, 'Outcome: skipped', [4.1, 1.3], [['outcome', 'string', 'skipped']]);
+  addSet(wf, 'Outcome: skipped', [4.1, 1.9], [['outcome', 'string', 'skipped']]);
 
   addLlmChain(wf, 'AI: Classify email', [4.2, -0.35], { system: CLASSIFY_SYSTEM, user: CLASSIFY_USER });
   addChatModel(wf, 'LLM (classify)', [4.4, 0.85]);
@@ -158,7 +158,7 @@ export function buildSupportWorker() {
   addCode(wf, 'Validate draft', [11.9, -0.35], code('support/parse-draft.js'), { mode: 'runOnceForEachItem' });
   addCode(wf, 'Build ticket', [12.9, -0.35], code('support/build-ticket.js'), { mode: 'runOnceForEachItem' });
   addIf(wf, 'Dry run?', [13.9, -0.35], [cond('={{ $json.dry_run }}', 'boolean', 'true')]);
-  addSet(wf, 'Outcome: dry run (draft only)', [15, -1.05], [['outcome', 'string', 'dry_run']]);
+  addSet(wf, 'Outcome: dry run (draft only)', [16.1, -1.0], [['outcome', 'string', 'dry_run']]);
 
   addIf(wf, 'Draft usable?', [16, 0.25], [cond('={{ $json.draft_usable }}', 'boolean', 'true')]);
   wf.node({
@@ -220,7 +220,7 @@ export function buildSupportWorker() {
     cond('={{ $json.dry_run }}', 'boolean', 'false'),
     cond('={{ $json.outcome }}', 'string', 'notEquals', 'skipped'),
   ]);
-  addSheetsAppend(wf, 'Sheets: support log', [24.4, -0.1], 'Support log');
+  addSheetsAppend(wf, 'Sheets: support log', [24.4, -0.7], 'Support log');
   addCode(wf, 'Result', [25.4, 0.25], "// Return the log row as the sub-workflow result (one item per email).\nreturn { json: $('Build log row').item.json };\n", { mode: 'runOnceForEachItem' });
 
   // wiring

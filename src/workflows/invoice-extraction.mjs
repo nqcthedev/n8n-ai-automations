@@ -42,9 +42,9 @@ export function buildInvoiceExtraction() {
     description: 'PDF invoices from an upload webhook or Gmail attachments -> text -> LLM structured extraction -> deterministic validation -> Sheets (valid) or review queue + Slack (invalid).',
   });
 
-  wf.sticky('Note: intake', '## 1. Intake\nTwo entry points: **upload webhook** (multipart, field `file`) and **Gmail** (PDF attachments).\nExact duplicate files are caught by SHA-256 *before* any AI call.', [-0.3, -1.5], { width: 1630, height: 1080, color: 7 });
-  wf.sticky('Note: extract', '## 2. Extract\nPDF text -> LLM returns strict JSON (vendor, number, dates, line items, totals, currency).\nThe model is told to copy numbers exactly and never fix them.', [6.6, -1.5], { width: 1180, height: 1080, color: 5 });
-  wf.sticky('Note: validate', '## 3. Validate in code (not by the AI)\nline items = subtotal, subtotal + tax = total, tax rate, qty x unit price, date sanity, ISO currency, duplicate invoice number per vendor.\nValid -> **Invoices** sheet. Anything else -> **Review queue** sheet + Slack.', [11.6, -1.5], { width: 2350, height: 1080, color: 4 });
+  wf.sticky('Note: intake', '## 1. Intake\nTwo entry points: **upload webhook** (multipart, field `file`) and **Gmail** (PDF attachments).\nExact duplicate files are caught by SHA-256 *before* any AI call.', [-0.3, -1.5], { width: 1630, height: 780, color: 7 });
+  wf.sticky('Note: extract', '## 2. Extract\nPDF text -> LLM returns strict JSON (vendor, number, dates, line items, totals, currency).\nThe model is told to copy numbers exactly and never fix them.', [6.6, -1.5], { width: 1180, height: 780, color: 5 });
+  wf.sticky('Note: validate', '## 3. Validate in code (not by the AI)\nline items = subtotal, subtotal + tax = total, tax rate, qty x unit price, date sanity, ISO currency, duplicate invoice number per vendor.\nValid -> **Invoices** sheet. Anything else -> **Review queue** sheet + Slack.', [11.6, -1.5], { width: 2350, height: 780, color: 4 });
 
   wf.node({
     name: 'Webhook: upload invoice',
@@ -93,7 +93,7 @@ export function buildInvoiceExtraction() {
   });
   addCode(wf, 'Check duplicate file', [5.4, 0.05], code('invoice/check-duplicate-file.js'), { mode: 'runOnceForEachItem' });
   addIf(wf, 'New file?', [6.4, 0.05], [cond('={{ $json.duplicate_file }}', 'boolean', 'false')]);
-  addCode(wf, 'Flag: duplicate file', [8.6, 1.25], code('invoice/flag-duplicate-file.js'), { mode: 'runOnceForEachItem' });
+  addCode(wf, 'Flag: duplicate file', [8.4, 1.4], code('invoice/flag-duplicate-file.js'), { mode: 'runOnceForEachItem' });
 
   wf.node({
     name: 'Extract PDF text',
@@ -104,7 +104,7 @@ export function buildInvoiceExtraction() {
     onError: 'continueRegularOutput',
   });
   addIf(wf, 'Has a text layer?', [8.4, -0.15], [cond('={{ ($json.text || "").trim().length }}', 'number', 'gte', 30)]);
-  addCode(wf, 'Flag: no text layer', [9.7, 0.75], code('invoice/flag-no-text.js'), { mode: 'runOnceForEachItem' });
+  addCode(wf, 'Flag: no text layer', [9.9, 1.4], code('invoice/flag-no-text.js'), { mode: 'runOnceForEachItem' });
 
   addLlmChain(wf, 'AI: Extract invoice data', [9.9, -0.5], { system: EXTRACT_SYSTEM, user: EXTRACT_USER });
   addChatModel(wf, 'LLM (extraction)', [10.1, 0.55], undefined, { temperature: 0 });

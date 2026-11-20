@@ -10,12 +10,12 @@
       "typeVersion": 1,
       "position": [
         -72,
-        -300
+        -440
       ],
       "parameters": {
         "content": "## Global error workflow\nEvery workflow in this repo has **Settings -> Error workflow** set to this one.\nWhen a production execution fails, n8n starts this workflow with the workflow name, failed node, error and a link to the execution.\nSlack and email are sent independently: if one channel is down the other still goes out.",
-        "width": 1550,
-        "height": 260,
+        "width": 1300,
+        "height": 300,
         "color": 3
       }
     },

@@ -47,7 +47,7 @@
       "parameters": {
         "content": "## 3. Human approval\nNothing is sent without a human: Slack message with **Approve & send / Reject** buttons (waits up to 24h).\nApproved -> Gmail reply in the same thread. Rejected / timed out -> email stays unread for manual handling.\nEvery email is logged to Google Sheets.",
         "width": 2350,
-        "height": 1300,
+        "height": 900,
         "color": 4
       }
     },
@@ -176,7 +176,7 @@
       "typeVersion": 3.4,
       "position": [
         984,
-        260
+        380
       ],
       "parameters": {
         "mode": "manual",
@@ -471,8 +471,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3600,
-        -210
+        3864,
+        -200
       ],
       "parameters": {
         "mode": "manual",
@@ -817,7 +817,7 @@
       "typeVersion": 4.6,
       "position": [
         5856,
-        -20
+        -140
       ],
       "parameters": {
         "operation": "append",

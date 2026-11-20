@@ -10,7 +10,7 @@ export function buildErrorAlerts() {
     description: 'Set as "Error workflow" in the settings of every production workflow. Alerts Slack + email with workflow, node, error and execution link.',
   });
 
-  wf.sticky('Note: error', '## Global error workflow\nEvery workflow in this repo has **Settings -> Error workflow** set to this one.\nWhen a production execution fails, n8n starts this workflow with the workflow name, failed node, error and a link to the execution.\nSlack and email are sent independently: if one channel is down the other still goes out.', [-0.3, -1.5], { width: 1550, height: 260, color: 3 });
+  wf.sticky('Note: error', '## Global error workflow\nEvery workflow in this repo has **Settings -> Error workflow** set to this one.\nWhen a production execution fails, n8n starts this workflow with the workflow name, failed node, error and a link to the execution.\nSlack and email are sent independently: if one channel is down the other still goes out.', [-0.3, -2.2], { width: 1300, height: 300, color: 3 });
 
   wf.node({
     name: 'Error Trigger',

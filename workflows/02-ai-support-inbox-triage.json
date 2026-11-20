@@ -10,12 +10,12 @@
       "typeVersion": 1,
       "position": [
         -72,
-        -330
+        -260
       ],
       "parameters": {
         "content": "## AI Support Inbox Triage (entry)\nPolls Gmail every minute for new unread email.\nEach email is handed to its **own** sub-workflow execution, so one slow approval in Slack never blocks the next email.\n\n**Test with sample emails** runs 3 sample emails (billing / bug / spam) through the real AI steps in dry-run mode.",
         "width": 1180,
-        "height": 330,
+        "height": 210,
         "color": 7
       }
     },
