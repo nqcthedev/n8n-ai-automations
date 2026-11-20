@@ -1,0 +1,170 @@
+# Self-hosted n8n + PostgreSQL, with optional HTTPS (Caddy) and queue mode
+# (Redis + workers).
+#
+#   cp .env.example .env              # then replace every CHANGE_ME value
+#   docker compose up -d                                  # n8n + Postgres on 127.0.0.1:5678
+#   docker compose --profile https up -d                  # + Caddy, automatic Let's Encrypt HTTPS
+#   # queue mode: set EXECUTIONS_MODE=queue in .env, then
+#   docker compose --profile https --profile queue up -d --scale n8n-worker=2
+#
+# STATUS: written for n8n 2.48.6 and reviewed carefully, but NOT yet run on a
+# real Docker host (the development machine had no Docker daemon). The same
+# workflows were verified on a local n8n 2.48.6 install. See docs/self-hosting.md.
+
+name: n8n-ai
+
+x-n8n-common: &n8n-common
+  image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.48.6}
+  restart: unless-stopped
+  environment: &n8n-env
+    # --- database -----------------------------------------------------------
+    DB_TYPE: postgresdb
+    DB_POSTGRESDB_HOST: postgres
+    DB_POSTGRESDB_PORT: 5432
+    DB_POSTGRESDB_DATABASE: ${POSTGRES_DB}
+    DB_POSTGRESDB_USER: ${POSTGRES_NON_ROOT_USER}
+    DB_POSTGRESDB_PASSWORD: ${POSTGRES_NON_ROOT_PASSWORD}
+    # --- core ---------------------------------------------------------------
+    # Protects every stored credential. Back it up: if it is lost, all saved
+    # credentials become unreadable.
+    N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+    N8N_HOST: ${N8N_HOST}
+    N8N_PORT: 5678
+    N8N_PROTOCOL: ${N8N_PROTOCOL}
+    N8N_EDITOR_BASE_URL: ${N8N_PROTOCOL}://${N8N_HOST}/
+    N8N_WEBHOOK_URL: ${N8N_PROTOCOL}://${N8N_HOST}/
+    N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE}
+    N8N_PROXY_HOPS: ${N8N_PROXY_HOPS}
+    GENERIC_TIMEZONE: ${GENERIC_TIMEZONE}
+    TZ: ${GENERIC_TIMEZONE}
+    N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+    N8N_DIAGNOSTICS_ENABLED: "false"
+    N8N_PERSONALIZATION_ENABLED: "false"
+    N8N_LOG_LEVEL: info
+    # --- executions -----------------------------------------------------------
+    EXECUTIONS_MODE: ${EXECUTIONS_MODE:-regular}
+    QUEUE_BULL_REDIS_HOST: redis
+    QUEUE_BULL_REDIS_PORT: 6379
+    QUEUE_HEALTH_CHECK_ACTIVE: "true"
+    OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: "true"
+    EXECUTIONS_DATA_PRUNE: "true"
+    EXECUTIONS_DATA_MAX_AGE: ${EXECUTIONS_DATA_MAX_AGE:-336}
+    EXECUTIONS_DATA_PRUNE_MAX_COUNT: ${EXECUTIONS_DATA_PRUNE_MAX_COUNT:-50000}
+    # Binary data (uploaded PDFs) in Postgres, so main + workers share it
+    # without a shared disk or S3.
+    N8N_DEFAULT_BINARY_DATA_MODE: database
+    # --- Code node task runner ------------------------------------------------
+    N8N_RUNNERS_MODE: internal
+    N8N_RUNNERS_TASK_TIMEOUT: 120
+    # --- configuration read by the "Config" node of each workflow ------------
+    # The workflows read their settings from these variables via $env, so this
+    # file + .env are the single place to configure them.
+    N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    AUTOMATION_DRY_RUN: ${AUTOMATION_DRY_RUN:-false}
+    LLM_MODEL: ${LLM_MODEL}
+    LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL}
+    BUSINESS_NAME: ${BUSINESS_NAME}
+    BUSINESS_PROFILE: ${BUSINESS_PROFILE}
+    EMAIL_SIGNATURE: ${EMAIL_SIGNATURE}
+    SUPPORT_SIGNATURE: ${SUPPORT_SIGNATURE}
+    LEAD_HOT_SCORE_THRESHOLD: ${LEAD_HOT_SCORE_THRESHOLD:-70}
+    LEAD_DEDUPE_WINDOW_HOURS: ${LEAD_DEDUPE_WINDOW_HOURS:-72}
+    LEAD_RESPONSE_DETAILS: ${LEAD_RESPONSE_DETAILS:-false}
+    SUPPORT_APPROVAL_TIMEOUT_HOURS: ${SUPPORT_APPROVAL_TIMEOUT_HOURS:-24}
+    INVOICE_AMOUNT_TOLERANCE: ${INVOICE_AMOUNT_TOLERANCE:-0.02}
+    SLACK_CHANNEL_SALES: ${SLACK_CHANNEL_SALES}
+    SLACK_CHANNEL_SUPPORT: ${SLACK_CHANNEL_SUPPORT}
+    SLACK_CHANNEL_FINANCE: ${SLACK_CHANNEL_FINANCE}
+    SLACK_CHANNEL_ALERTS: ${SLACK_CHANNEL_ALERTS}
+    ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
+    GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID}
+  volumes:
+    - n8n_data:/home/node/.n8n
+    - ../workflows:/workflows:ro
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_NON_ROOT_USER: ${POSTGRES_NON_ROOT_USER}
+      POSTGRES_NON_ROOT_PASSWORD: ${POSTGRES_NON_ROOT_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-data.sh:/docker-entrypoint-initdb.d/init-data.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    <<: *n8n-common
+    ports:
+      # Localhost only. Use the "https" profile (Caddy) or your own reverse
+      # proxy for public access - never expose 5678 directly.
+      - "127.0.0.1:5678:5678"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5678/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # --- queue mode (profile "queue"; requires EXECUTIONS_MODE=queue) ---------
+  redis:
+    image: redis:7-alpine
+    profiles: ["queue"]
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n-worker:
+    <<: *n8n-common
+    profiles: ["queue"]
+    command: worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+
+  # --- HTTPS reverse proxy (profile "https") --------------------------------
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["https"]
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      N8N_HOST: ${N8N_HOST}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - n8n
+
+volumes:
+  postgres_data:
+  n8n_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

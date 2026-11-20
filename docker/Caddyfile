@@ -1,0 +1,36 @@
+# Automatic HTTPS (Let's Encrypt) for n8n. N8N_HOST and ACME_EMAIL come from .env.
+{
+	email {$ACME_EMAIL}
+}
+
+{$N8N_HOST} {
+	encode zstd gzip
+
+	# Security headers
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Large enough for PDF uploads to the invoice webhook.
+	request_body {
+		max_size 20MB
+	}
+
+	# Optional hardening: restrict the editor UI to your office/VPN IPs while
+	# leaving webhooks public. Uncomment and set your IP ranges.
+	# @editor {
+	# 	not path /webhook/* /webhook-waiting/* /form/* /healthz
+	# 	not remote_ip 203.0.113.0/24
+	# }
+	# respond @editor 403
+
+	reverse_proxy n8n:5678 {
+		# Long-running webhook executions (LLM calls) can take a while.
+		transport http {
+			read_timeout 300s
+		}
+	}
+}
