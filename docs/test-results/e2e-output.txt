@@ -1,0 +1,27 @@
+Starting a fresh local n8n (import + publish workflows) ...
+AI Lead Qualifier  (POST /webhook/lead-intake)
+  ✓ hot lead -> qualified, tier "hot", score >= 70, budget band 5k-20k (2015 ms)  score=95 intent=quote_request urgency=high
+  ✓ poor-fit lead (student, free logo) -> score < 40 (1071 ms)  score=15 intent=other tier=cold
+  ✓ SEO spam lead -> spam / vendor pitch, score < 40 (1109 ms)  score=0 intent=vendor_pitch tier=cold
+  ✓ duplicate submission (same email) -> "duplicate", no AI call (96 ms)
+  ✓ invalid submission -> HTTP 422 with field errors (79 ms)
+  ✓ honeypot filled -> silent 200 without processing (66 ms)
+AI Invoice Extraction  (POST /webhook/invoice-upload)
+  ✓ invoice-01-valid.pdf -> valid, all fields extracted (1839 ms)  Lumen Cloud Hosting Ltd INV-2026-0142 total=421.3 USD
+  ✓ invoice-02-wrong-total.pdf -> needs_review: line items != subtotal (1546 ms)  line_items_sum_mismatch: Line items add up to 2450.00 but the stated subtotal is 2540.00 (difference 90.00)
+  ✓ invoice-03 (same number, different file) -> duplicate_invoice_number (1260 ms)
+  ✓ same PDF uploaded again -> duplicate_file (caught before the LLM) (326 ms)
+  ✓ upload without a PDF -> HTTP 400 (58 ms)
+AI Support Inbox Triage  (dev harness -> real "process one email" sub-workflow)
+  ✓ 4 emails processed (one sub-workflow execution each) (4713 ms)
+  ✓ billing email -> category billing, grounded draft citing billing FAQ (0 ms)  urgency=normal sentiment=neutral faq=[billing-invoice, billing-refund] attention=true
+  ✓ CSV export complaint -> category bug, high/critical urgency, export FAQ used (0 ms)  urgency=high sentiment=angry
+  ✓ SEO spam -> spam_ignored (no draft) (0 ms)
+  ✓ auto-reply -> skipped before any AI call (0 ms)
+Error Alerts (global error workflow)
+  ✓ a failing production execution triggers the error workflow with node + error + link (1751 ms)  http://localhost:5678/workflow/n8nAiDevErrorTst/executions/107
+Restarting n8n with a broken model name ...
+Simulated LLM outage (n8n restarted with LLM_MODEL=model-that-does-not-exist)
+  ✓ lead is still accepted and marked needs_manual_review after retry + fallback (12162 ms)  LLM request failed: The resource you are requesting could not be found
+  ✓ invoice goes to the review queue with extraction_failed (6617 ms)
+all passed: 19/19 checks in 112 s  -> test/output/e2e-results.json

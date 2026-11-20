@@ -1,0 +1,464 @@
+{
+  "run": "mwoktbxy",
+  "at": "2026-11-20T06:08:26.396Z",
+  "base": "http://localhost:5678",
+  "passed": 19,
+  "failed": 0,
+  "results": [
+    {
+      "name": "hot lead -> qualified, tier \"hot\", score >= 70, budget band 5k-20k",
+      "ok": true,
+      "ms": 2015
+    },
+    {
+      "name": "poor-fit lead (student, free logo) -> score < 40",
+      "ok": true,
+      "ms": 1071
+    },
+    {
+      "name": "SEO spam lead -> spam / vendor pitch, score < 40",
+      "ok": true,
+      "ms": 1109
+    },
+    {
+      "name": "duplicate submission (same email) -> \"duplicate\", no AI call",
+      "ok": true,
+      "ms": 96
+    },
+    {
+      "name": "invalid submission -> HTTP 422 with field errors",
+      "ok": true,
+      "ms": 79
+    },
+    {
+      "name": "honeypot filled -> silent 200 without processing",
+      "ok": true,
+      "ms": 66
+    },
+    {
+      "name": "invoice-01-valid.pdf -> valid, all fields extracted",
+      "ok": true,
+      "ms": 1839
+    },
+    {
+      "name": "invoice-02-wrong-total.pdf -> needs_review: line items != subtotal",
+      "ok": true,
+      "ms": 1546
+    },
+    {
+      "name": "invoice-03 (same number, different file) -> duplicate_invoice_number",
+      "ok": true,
+      "ms": 1260
+    },
+    {
+      "name": "same PDF uploaded again -> duplicate_file (caught before the LLM)",
+      "ok": true,
+      "ms": 326
+    },
+    {
+      "name": "upload without a PDF -> HTTP 400",
+      "ok": true,
+      "ms": 58
+    },
+    {
+      "name": "4 emails processed (one sub-workflow execution each)",
+      "ok": true,
+      "ms": 4713
+    },
+    {
+      "name": "billing email -> category billing, grounded draft citing billing FAQ",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "CSV export complaint -> category bug, high/critical urgency, export FAQ used",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "SEO spam -> spam_ignored (no draft)",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "auto-reply -> skipped before any AI call",
+      "ok": true,
+      "ms": 0
+    },
+    {
+      "name": "a failing production execution triggers the error workflow with node + error + link",
+      "ok": true,
+      "ms": 1751
+    },
+    {
+      "name": "lead is still accepted and marked needs_manual_review after retry + fallback",
+      "ok": true,
+      "ms": 12162
+    },
+    {
+      "name": "invoice goes to the review queue with extraction_failed",
+      "ok": true,
+      "ms": 6617
+    }
+  ],
+  "evidence": {
+    "leads": {
+      "hot": {
+        "request": {
+          "name": "Maria Lopez",
+          "email": "maria.lopez+mwoktbxy@brightpath-logistics.com",
+          "company": "BrightPath Logistics",
+          "website": "brightpath-logistics.com",
+          "message": "We run a 40-person logistics company and want to automate our quote requests: customers email us PDFs and we retype them into our TMS. Looking for an AI workflow that extracts the data and drafts quotes. Budget around 15k USD, we would like to start next month.",
+          "budget": "~15k USD",
+          "timeline": "start next month"
+        },
+        "response": {
+          "status": "received",
+          "lead_id": "lead_mwokup8wrux6",
+          "message": "Thanks! We received your request and will get back to you shortly.",
+          "details": {
+            "qualification_status": "qualified",
+            "tier": "hot",
+            "score": 95,
+            "intent": "quote_request",
+            "budget_band": "5k-20k",
+            "urgency": "high",
+            "company": "BrightPath Logistics",
+            "reasoning": "Maria has a clear business problem that matches our AI workflow and automation services. She provided a company email domain, a specific budget of ~$15k USD, and a concrete timeline to start next month.",
+            "suggested_reply": "Hi Maria,\n\nThanks for reaching out to Acme Digital. Automating your quote requests by using AI to extract data from incoming PDF emails and draft quotes into your TMS sounds like a great workflow to streamline your operations.\n\nWe have experience building custom AI assistants and automation integrations for businesses like yours. Given your timeline to start next month, I'd love to learn a bit more about your current TMS setup and requirements.\n\nAre you available for a brief 15-minute introductory call sometime next week to discuss this further?\n\nBest regards,\n\nThe Acme Digital team",
+            "ai_attempts": 1,
+            "ai_errors": null,
+            "dry_run": true,
+            "actions": []
+          }
+        }
+      },
+      "cold": {
+        "request": {
+          "name": "Tom",
+          "email": "tom.student+mwoktbxy@gmail.com",
+          "message": "hi, I am a student. can you design a logo for my school chess club for free? thanks"
+        },
+        "response": {
+          "status": "received",
+          "lead_id": "lead_mwokuqsipgmd",
+          "message": "Thanks! We received your request and will get back to you shortly.",
+          "details": {
+            "qualification_status": "qualified",
+            "tier": "cold",
+            "score": 15,
+            "intent": "other",
+            "budget_band": "<1k",
+            "urgency": "low",
+            "company": "Unknown company",
+            "reasoning": "The lead is a student asking for free logo design, which is a service Acme Digital does not offer. Additionally, they are using a free Gmail address and request pro bono work, making this a poor fit for our B2B services.",
+            "suggested_reply": "Hi Tom,\n\nThanks for reaching out! Unfortunately, we don't offer logo design services, and we focus strictly on paid web application and automation projects for businesses rather than pro bono student work. We recommend checking out student-focused design communities or platforms like Fiverr for your school chess club's logo needs.\n\nBest of luck with the chess club!\n\nThe Acme Digital team",
+            "ai_attempts": 1,
+            "ai_errors": null,
+            "dry_run": true,
+            "actions": []
+          }
+        }
+      },
+      "spam": {
+        "request": {
+          "name": "SEO Pro Team",
+          "email": "offers+mwoktbxy@rank-boost-agency.example",
+          "company": "Rank Boost Agency",
+          "message": "Dear Sir/Madam, we can get your website to #1 on Google in 30 days with our premium backlink package. Only $99! Reply now to claim the offer."
+        },
+        "response": {
+          "status": "received",
+          "lead_id": "lead_mwokurn4rk1e",
+          "message": "Thanks! We received your request and will get back to you shortly.",
+          "details": {
+            "qualification_status": "qualified",
+            "tier": "cold",
+            "score": 0,
+            "intent": "vendor_pitch",
+            "budget_band": "unknown",
+            "urgency": "low",
+            "company": "Rank Boost Agency",
+            "reasoning": "The message is a clear unsolicited vendor pitch offering SEO and backlink services, which are explicitly outside of Acme Digital's service offerings. Therefore, it has been classified as spam/vendor pitch and assigned the lowest score.",
+            "suggested_reply": "Hi SEO Pro Team, thanks for reaching out. We do not require SEO or link-building services at this time. Wishing you the best with your business. The Acme Digital team",
+            "ai_attempts": 1,
+            "ai_errors": null,
+            "dry_run": true,
+            "actions": []
+          }
+        }
+      }
+    },
+    "invoices": {
+      "valid": {
+        "status": "valid",
+        "route": "dry_run",
+        "file_name": "invoice-01-valid.pdf",
+        "file_sha256": "05b5529e0971c947f627556bddc6c0be488e30476eaef2c713863f7507066a31",
+        "issues": [],
+        "issue_details": [],
+        "warnings": [],
+        "invoice": {
+          "document_type": "invoice",
+          "vendor_name": "Lumen Cloud Hosting Ltd",
+          "vendor_tax_id": "201912345K",
+          "invoice_number": "INV-2026-0142",
+          "issue_date": "2026-10-01",
+          "due_date": "2026-10-31",
+          "currency": "USD",
+          "bill_to": "Example Retail Co.",
+          "line_items": [
+            {
+              "description": "Managed VPS (4 vCPU / 8 GB) - October",
+              "quantity": 2,
+              "unit_price": 89,
+              "amount": 178
+            },
+            {
+              "description": "Daily off-site backups",
+              "quantity": 2,
+              "unit_price": 12.5,
+              "amount": 25
+            },
+            {
+              "description": "Support hours (incident #5521)",
+              "quantity": 3,
+              "unit_price": 60,
+              "amount": 180
+            }
+          ],
+          "subtotal": 383,
+          "tax_amount": 38.3,
+          "tax_rate_percent": 10,
+          "total": 421.3,
+          "line_items_sum": 383
+        }
+      },
+      "wrongTotal": {
+        "status": "needs_review",
+        "route": "dry_run",
+        "file_name": "invoice-02-wrong-total.pdf",
+        "file_sha256": "c5b71569deb53acf8831b3b9b15c9ab53266ac6fbcb53e1397fed51c2a7f53ee",
+        "issues": [
+          "line_items_sum_mismatch"
+        ],
+        "issue_details": [
+          "line_items_sum_mismatch: Line items add up to 2450.00 but the stated subtotal is 2540.00 (difference 90.00)"
+        ],
+        "warnings": [],
+        "invoice": {
+          "document_type": "invoice",
+          "vendor_name": "Bluefin Design Studio",
+          "vendor_tax_id": "DE123456789",
+          "invoice_number": "BDS-7781",
+          "issue_date": "2026-10-12",
+          "due_date": "2026-11-11",
+          "currency": "EUR",
+          "bill_to": "Example Retail Co.",
+          "line_items": [
+            {
+              "description": "Logo redesign (3 concepts, 2 revision rounds)",
+              "quantity": 1,
+              "unit_price": 1200,
+              "amount": 1200
+            },
+            {
+              "description": "Brand guidelines PDF",
+              "quantity": 1,
+              "unit_price": 850,
+              "amount": 850
+            },
+            {
+              "description": "Social media template kit",
+              "quantity": 4,
+              "unit_price": 100,
+              "amount": 400
+            }
+          ],
+          "subtotal": 2540,
+          "tax_amount": 508,
+          "tax_rate_percent": 20,
+          "total": 3048,
+          "line_items_sum": 2450
+        }
+      },
+      "duplicateNumber": {
+        "status": "needs_review",
+        "route": "dry_run",
+        "file_name": "invoice-03-duplicate-resend.pdf",
+        "file_sha256": "11f7713bf09d8703ee8e345a8259ce7be6b27d0c7ae9f7f3c1d9a4127b251a59",
+        "issues": [
+          "duplicate_invoice_number"
+        ],
+        "issue_details": [
+          "duplicate_invoice_number: Invoice INV-2026-0142 from Lumen Cloud Hosting Ltd was already processed on 2026-11-20 (file invoice-01-valid.pdf)"
+        ],
+        "warnings": [],
+        "invoice": {
+          "document_type": "invoice",
+          "vendor_name": "Lumen Cloud Hosting Ltd",
+          "vendor_tax_id": "201912345K",
+          "invoice_number": "INV-2026-0142",
+          "issue_date": "2026-10-01",
+          "due_date": "2026-10-31",
+          "currency": "USD",
+          "bill_to": "Example Retail Co.",
+          "line_items": [
+            {
+              "description": "Managed VPS (4 vCPU / 8 GB) - October",
+              "quantity": 2,
+              "unit_price": 89,
+              "amount": 178
+            },
+            {
+              "description": "Daily off-site backups",
+              "quantity": 2,
+              "unit_price": 12.5,
+              "amount": 25
+            },
+            {
+              "description": "Support hours (incident #5521)",
+              "quantity": 3,
+              "unit_price": 60,
+              "amount": 180
+            }
+          ],
+          "subtotal": 383,
+          "tax_amount": 38.3,
+          "tax_rate_percent": 10,
+          "total": 421.3,
+          "line_items_sum": 383
+        }
+      }
+    },
+    "support": [
+      {
+        "logged_at": "2026-11-20T06:07:49.095Z",
+        "outcome": "dry_run",
+        "message_id": "test-0-1795154867265",
+        "thread_id": "test-thread-0",
+        "from": "jordan.lee@northbeam-studio.example",
+        "subject": "Charged twice this month?",
+        "category": "billing",
+        "sentiment": "neutral",
+        "urgency": "normal",
+        "summary": "The customer is requesting a refund for a duplicate $39 charge and needs to know where to download the invoice containing their VAT number.",
+        "classification_valid": true,
+        "faq_ids_used": "billing-invoice, billing-refund",
+        "draft_confidence": 0.95,
+        "needs_human_attention": true,
+        "reply_subject": "Re: Charged twice this month?",
+        "reply_body": "Hi Jordan,\n\nThanks for reaching out. I understand you noticed two charges this month and would like a refund for the duplicate charge. Regarding refunds, new subscriptions have a 14-day money-back guarantee on the first payment, but our team will review your specific request and confirm the outcome.\n\nTo download your invoice and add your VAT details, you can go to Settings > Billing > Invoices, where invoices are available for PDF download. Any company name, address, and VAT ID you add there will apply to all future invoices.\n\nThe Acme Cloud support team",
+        "dry_run": true
+      },
+      {
+        "logged_at": "2026-11-20T06:07:51.058Z",
+        "outcome": "dry_run",
+        "message_id": "test-1-1795154867265",
+        "thread_id": "test-thread-1",
+        "from": "priya.sharma@quantaops.example",
+        "subject": "CSV export not working - urgent",
+        "category": "bug",
+        "sentiment": "angry",
+        "urgency": "high",
+        "summary": "The customer is experiencing issues exporting a large CSV file because the download fails, which is urgent since they need the report for a board meeting tomorrow.",
+        "classification_valid": true,
+        "faq_ids_used": "bug-export",
+        "draft_confidence": 0.95,
+        "needs_human_attention": true,
+        "reply_subject": "Re: CSV export not working - urgent",
+        "reply_body": "Hello Priya,\n\nI am so sorry for the frustration this is causing, especially with your board meeting tomorrow morning.\n\nFor exports larger than 50,000 rows, our system generates them in the background rather than downloading directly in your browser. You should receive an email with a download link within about 15 minutes of starting the export. \n\nPlease check your inbox and spam folder for that email. If you still do not see it shortly, please let us know and we will be happy to follow up.\n\nThe Acme Cloud support team",
+        "dry_run": true
+      },
+      {
+        "logged_at": "2026-11-20T06:07:51.821Z",
+        "outcome": "spam_ignored",
+        "message_id": "test-2-1795154867265",
+        "thread_id": "test-thread-2",
+        "from": "growth@seo-rank-boost.example",
+        "subject": "Guaranteed #1 Google ranking for example.com",
+        "category": "spam",
+        "sentiment": "neutral",
+        "urgency": "low",
+        "summary": "Unsolicited SEO and link-building marketing email offering guaranteed Google rankings.",
+        "classification_valid": true,
+        "faq_ids_used": "",
+        "draft_confidence": "",
+        "needs_human_attention": "",
+        "reply_subject": "",
+        "reply_body": "",
+        "dry_run": true
+      },
+      {
+        "logged_at": "2026-11-20T06:07:51.896Z",
+        "outcome": "skipped",
+        "message_id": "test-3-1795154867265",
+        "thread_id": "test-thread-3",
+        "from": "alex@partner.example",
+        "subject": "Automatic reply: Out of office",
+        "category": "",
+        "sentiment": "",
+        "urgency": "",
+        "summary": "auto-submitted (auto-reply)",
+        "classification_valid": "",
+        "faq_ids_used": "",
+        "draft_confidence": "",
+        "needs_human_attention": "",
+        "reply_subject": "",
+        "reply_body": "",
+        "dry_run": true
+      }
+    ],
+    "errorAlert": {
+      "workflow_id": "n8nAiDevErrorTst",
+      "workflow_name": "DEV - Error workflow smoke test",
+      "execution_id": "107",
+      "execution_url": "http://localhost:5678/workflow/n8nAiDevErrorTst/executions/107",
+      "failed_node": "Simulated failure",
+      "error_message": "Simulated failure for smoke test smoke-mwoktbxy",
+      "kind": "Execution failed",
+      "occurred_at": "2026-11-20T06:07:52.170Z",
+      "slack_text": ":rotating_light: *Execution failed: DEV - Error workflow smoke test*\n*Node:* Simulated failure   *Mode:* webhook   *Time:* 2026-11-20T06:07:52.170Z\n*Error:* Simulated failure for smoke test smoke-mwoktbxy\n<http://localhost:5678/workflow/n8nAiDevErrorTst/executions/107|Open execution 107>",
+      "email_subject": "[n8n] Execution failed: DEV - Error workflow smoke test (Simulated failure)",
+      "email_body": "Execution failed\n\nWorkflow:   DEV - Error workflow smoke test (id n8nAiDevErrorTst)\nNode:       Simulated failure\nExecution:  107\nLink:       http://localhost:5678/workflow/n8nAiDevErrorTst/executions/107\nTime (UTC): 2026-11-20T06:07:52.170Z\n\nError:\nSimulated failure for smoke test smoke-mwoktbxy\n\nStack (top):\nNodeOperationError: Simulated failure for smoke test smoke-mwoktbxy\n    at ExecuteContext.execute (/home/user/portfolio/n8n-ai-automations/.n8n-local/node_modules/n8n-nodes-base/nodes/StopAndError/StopAndError.node.ts:91:9)\n    at WorkflowExecute.executeNode (/home/user/portfolio/n8n-ai-automations/.n8n-local/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1160:31)\n    at WorkflowExecute.runNode (/home/user/portfolio/n8n-ai-automations/.n8n-local/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1462:11)",
+      "alert_email_to": "ops@example.com"
+    },
+    "outage": {
+      "lead": {
+        "status": "received",
+        "lead_id": "lead_mwokvbg4wc6j",
+        "message": "Thanks! We received your request and will get back to you shortly.",
+        "details": {
+          "qualification_status": "needs_manual_review",
+          "tier": "review",
+          "score": null,
+          "intent": null,
+          "budget_band": null,
+          "urgency": null,
+          "company": "BrightPath Logistics",
+          "reasoning": null,
+          "suggested_reply": null,
+          "ai_attempts": 2,
+          "ai_errors": "LLM request failed: The resource you are requesting could not be found",
+          "dry_run": true,
+          "actions": []
+        }
+      },
+      "invoice": {
+        "status": "needs_review",
+        "route": "dry_run",
+        "file_name": "outage-test.pdf",
+        "file_sha256": "d995009d3b628c32fb975d75fd9c97f39c879af05a00bc6c4d7b4118f3c0decf",
+        "issues": [
+          "extraction_failed"
+        ],
+        "issue_details": [
+          "extraction_failed: LLM request failed: The resource you are requesting could not be found"
+        ],
+        "warnings": [],
+        "invoice": null
+      }
+    }
+  }
+}
