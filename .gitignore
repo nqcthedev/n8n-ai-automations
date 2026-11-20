@@ -1,0 +1,12 @@
+# Local n8n install + data (SQLite DB, encryption key, binary data)
+.n8n-local/
+# Local secrets
+.env
+.env.local
+docker/.env
+# Backups contain workflow + credential data
+backups/
+node_modules/
+test/output/
+*.log
+.DS_Store
