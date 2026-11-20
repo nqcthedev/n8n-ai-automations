@@ -1,0 +1,273 @@
+{
+  "id": "n8nAiErrorAlerts",
+  "name": "Error Alerts (global error workflow)",
+  "description": "Set as \"Error workflow\" in the settings of every production workflow. Alerts Slack + email with workflow, node, error and execution link.",
+  "nodes": [
+    {
+      "id": "876bc638-959b-4f98-a17b-fb422b4d5e3b",
+      "name": "Note: error",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -72,
+        -300
+      ],
+      "parameters": {
+        "content": "## Global error workflow\nEvery workflow in this repo has **Settings -> Error workflow** set to this one.\nWhen a production execution fails, n8n starts this workflow with the workflow name, failed node, error and a link to the execution.\nSlack and email are sent independently: if one channel is down the other still goes out.",
+        "width": 1550,
+        "height": 260,
+        "color": 3
+      }
+    },
+    {
+      "id": "906ac9d8-8534-4638-a16e-826490194e2f",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        40
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "195ced0e-c5a3-409a-a85e-b014ea80cdc6",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        40
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba8932bf-fa35-4fb4-a11a-64e89b888e22",
+              "name": "dryRun",
+              "type": "boolean",
+              "value": "={{ String($env.AUTOMATION_DRY_RUN || 'false').toLowerCase() === 'true' }}"
+            },
+            {
+              "id": "5d804029-a798-46ff-ac5a-0510f07c08bc",
+              "name": "slackChannel",
+              "type": "string",
+              "value": "={{ $env.SLACK_CHANNEL_ALERTS || \"#n8n-alerts\" }}"
+            },
+            {
+              "id": "9b897ff2-0e93-417a-af3b-a6b00cc25556",
+              "name": "alertEmailTo",
+              "type": "string",
+              "value": "={{ $env.ALERT_EMAIL_TO || \"ops@example.com\" }}"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      }
+    },
+    {
+      "id": "52253068-a786-4b94-ad1a-27d91265963e",
+      "name": "Format alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        40
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Turn the Error Trigger payload into a readable alert.\n// Handles both failure kinds n8n reports:\n//  - execution errors:  { execution: { id, url, error, lastNodeExecuted, mode }, workflow }\n//  - trigger/activation errors: { trigger: { error, mode }, workflow }\n// Mode: Run once for all items.\n\nconst cfg = $('Config').first().json;\nconst e = $('Error Trigger').first().json;\nconst wf = e.workflow || {};\nconst exec = e.execution || null;\nconst trig = e.trigger || null;\nconst err = (exec && exec.error) || (trig && trig.error) || {};\n\nconst message = String(err.message || err.description || 'Unknown error').slice(0, 1000);\nconst failedNode = (err.node && err.node.name) || (exec && exec.lastNodeExecuted) || 'n/a';\nconst stackTop = String(err.stack || '').split('\\n').slice(0, 4).join('\\n').slice(0, 800);\nconst when = new Date().toISOString();\nconst kind = exec ? 'Execution failed' : 'Trigger / activation failed';\nconst url = (exec && exec.url) || '';\n\n// Slack mrkdwn escaping for untrusted error text.\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst slackText = [\n  `:rotating_light: *${kind}: ${esc(wf.name || 'unknown workflow')}*`,\n  `*Node:* ${esc(failedNode)}   *Mode:* ${esc((exec && exec.mode) || (trig && trig.mode) || 'n/a')}   *Time:* ${when}`,\n  `*Error:* ${esc(message)}`,\n  url ? `<${url}|Open execution ${exec.id}>` : (exec ? `Execution id: ${exec.id}` : ''),\n  exec && exec.retryOf ? `_(retry of execution ${exec.retryOf})_` : '',\n].filter(Boolean).join('\\n');\n\nconst emailSubject = `[n8n] ${kind}: ${wf.name || 'unknown workflow'} (${failedNode})`;\nconst emailBody = [\n  `${kind}`,\n  ``,\n  `Workflow:   ${wf.name || 'n/a'} (id ${wf.id || 'n/a'})`,\n  `Node:       ${failedNode}`,\n  `Execution:  ${exec ? exec.id : 'n/a'}`,\n  `Link:       ${url || 'n/a'}`,\n  `Time (UTC): ${when}`,\n  ``,\n  `Error:`,\n  message,\n  ``,\n  stackTop ? `Stack (top):\\n${stackTop}` : '',\n].join('\\n');\n\nreturn [{\n  json: {\n    workflow_id: wf.id || null,\n    workflow_name: wf.name || null,\n    execution_id: exec ? exec.id : null,\n    execution_url: url || null,\n    failed_node: failedNode,\n    error_message: message,\n    kind,\n    occurred_at: when,\n    slack_text: slackText,\n    email_subject: emailSubject,\n    email_body: emailBody,\n    alert_email_to: cfg.alertEmailTo,\n  },\n}];\n"
+      }
+    },
+    {
+      "id": "c5e09a7b-70cb-4b3c-ad71-7b6231fdb6e5",
+      "name": "Dry run?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f0726cea-dc51-44ca-ab62-c0a8006862ef",
+              "leftValue": "={{ $('Config').first().json.dryRun }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      }
+    },
+    {
+      "id": "38d3dbe0-f971-47e7-a3df-6eff0fdd42f5",
+      "name": "Dry run: alert not sent",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -80
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "940fb7d7-1215-4981-ab93-65261607abc9",
+      "name": "Slack: alert channel",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        1008,
+        120
+      ],
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.slackChannel }}",
+          "mode": "name"
+        },
+        "text": "={{ $json.slack_text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "mrkdwn": true
+        }
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "slackBotToken001",
+          "name": "Slack bot"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "5c8d7073-5e4c-4a75-ad76-cd2dea5ffed5",
+      "name": "Gmail: alert email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1008,
+        300
+      ],
+      "parameters": {
+        "sendTo": "={{ $json.alert_email_to }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "text",
+        "message": "={{ $json.email_body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailOAuth2Acct1",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Format alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format alert": {
+      "main": [
+        [
+          {
+            "node": "Dry run?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dry run?": {
+      "main": [
+        [
+          {
+            "node": "Dry run: alert not sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack: alert channel",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail: alert email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "ops"
+    },
+    {
+      "name": "portfolio"
+    }
+  ]
+}

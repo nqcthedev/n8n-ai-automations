@@ -1,0 +1,139 @@
+{
+  "id": "n8nAiDevSupportH",
+  "name": "DEV - Support triage test harness",
+  "description": "Local testing only. Feeds test emails into the support worker sub-workflow (dry run) and returns its results.",
+  "nodes": [
+    {
+      "id": "2d76a435-784b-4a96-a863-e38de3fd9bd6",
+      "name": "Webhook: dev-support-triage",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dev-support-triage",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "207eb391-4058-42a7-a966-abbac6ae2c5b"
+    },
+    {
+      "id": "b09c0574-f5e5-4f00-a403-4dc31ce509cf",
+      "name": "To Gmail message shape",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// Convert simple test emails into the Gmail Trigger (Simplify OFF) shape.\nconst emails = ($input.first().json.body && $input.first().json.body.emails) || [];\nreturn emails.map((e, i) => ({\n  json: {\n    id: 'test-' + i + '-' + Date.now(),\n    threadId: 'test-thread-' + i,\n    isSample: true, // forces dry run in the worker\n    date: new Date().toISOString(),\n    subject: e.subject || '',\n    text: e.body || '',\n    from: { value: [{ address: e.from || '', name: e.from_name || '' }], text: e.from || '' },\n    headers: e.headers || {},\n  },\n}));\n"
+      }
+    },
+    {
+      "id": "6c9ce780-a5c4-418e-a792-f1d54f5fbef9",
+      "name": "Run support worker",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        0
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "n8nAiSupportWork",
+          "mode": "list",
+          "cachedResultName": "AI Support Inbox Triage - process one email"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "18ee9aa2-8310-4eb9-a079-12b13a9fc03d",
+      "name": "Respond with results",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        864,
+        0
+      ],
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: dev-support-triage": {
+      "main": [
+        [
+          {
+            "node": "To Gmail message shape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "To Gmail message shape": {
+      "main": [
+        [
+          {
+            "node": "Run support worker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run support worker": {
+      "main": [
+        [
+          {
+            "node": "Respond with results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "n8nAiErrorAlerts"
+  },
+  "staticData": null,
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dev"
+    }
+  ]
+}

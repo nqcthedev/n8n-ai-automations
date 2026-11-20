@@ -1,0 +1,71 @@
+{
+  "id": "n8nAiDevErrorTst",
+  "name": "DEV - Error workflow smoke test",
+  "description": "Local testing only. Fails on purpose so the global error workflow runs.",
+  "nodes": [
+    {
+      "id": "b2b9f38f-435d-4783-a564-c5038f1f78f0",
+      "name": "Webhook: dev-fail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dev-fail",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "bab27b1f-e90d-4f19-af26-45d52a9d05ea"
+    },
+    {
+      "id": "fd21e903-bb88-4e45-ad08-41b991a56332",
+      "name": "Simulated failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        288,
+        0
+      ],
+      "parameters": {
+        "errorType": "errorMessage",
+        "errorMessage": "={{ \"Simulated failure for smoke test \" + ($json.body.marker || \"\") }}"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: dev-fail": {
+      "main": [
+        [
+          {
+            "node": "Simulated failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": false,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "n8nAiErrorAlerts"
+  },
+  "staticData": null,
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": [
+    {
+      "name": "dev"
+    }
+  ]
+}
